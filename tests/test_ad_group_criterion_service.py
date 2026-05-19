@@ -36,7 +36,7 @@ def ad_group_criterion_service(mock_sdk_client: Any) -> AdGroupCriterionService:
     mock_sdk_client.client.get_service.return_value = mock_ad_group_criterion_client  # type: ignore
 
     with patch(
-        "src.sdk_services.ad_group.ad_group_criterion_service.get_sdk_client",
+        "src.services.ad_group.ad_group_criterion_service.get_sdk_client",
         return_value=mock_sdk_client,
     ):
         service = AdGroupCriterionService()
@@ -87,7 +87,7 @@ async def test_add_keywords(
     }
 
     with patch(
-        "src.sdk_services.ad_group.ad_group_criterion_service.serialize_proto_message",
+        "src.services.ad_group.ad_group_criterion_service.serialize_proto_message",
         return_value=expected_result,
     ):
         # Act
@@ -174,7 +174,7 @@ async def test_add_negative_keywords(
     }
 
     with patch(
-        "src.sdk_services.ad_group.ad_group_criterion_service.serialize_proto_message",
+        "src.services.ad_group.ad_group_criterion_service.serialize_proto_message",
         return_value=expected_result,
     ):
         # Act
@@ -363,7 +363,7 @@ async def test_add_demographic_criteria(
     }
 
     with patch(
-        "src.sdk_services.ad_group.ad_group_criterion_service.serialize_proto_message",
+        "src.services.ad_group.ad_group_criterion_service.serialize_proto_message",
         return_value=expected_result,
     ):
         # Act
@@ -464,16 +464,30 @@ async def test_add_demographic_criteria_unknown_type(
     mock_ad_group_criterion_client = ad_group_criterion_service.client  # type: ignore
     mock_ad_group_criterion_client.mutate_ad_group_criteria.return_value = mock_response  # type: ignore
 
-    # Act
-    result = await ad_group_criterion_service.add_demographic_criteria(
-        ctx=mock_ctx,
-        customer_id=customer_id,
-        ad_group_id=ad_group_id,
-        demographics=demographics,
-    )
+    expected_result = {
+        "results": [
+            {
+                "resource_name": (
+                    f"customers/{customer_id}/adGroupCriteria/{ad_group_id}~401"
+                )
+            }
+        ]
+    }
+
+    with patch(
+        "src.services.ad_group.ad_group_criterion_service.serialize_proto_message",
+        return_value=expected_result,
+    ):
+        # Act
+        result = await ad_group_criterion_service.add_demographic_criteria(
+            ctx=mock_ctx,
+            customer_id=customer_id,
+            ad_group_id=ad_group_id,
+            demographics=demographics,
+        )
 
     # Assert - only 1 result since unknown type was skipped
-    assert len(result) == 1
+    assert len(result["results"]) == 1
 
     # Verify the API call - only 1 operation since unknown type was skipped
     call_args = mock_ad_group_criterion_client.mutate_ad_group_criteria.call_args  # type: ignore
@@ -513,7 +527,7 @@ async def test_update_criterion_bid(
     expected_result = {"results": [{"resource_name": criterion_resource_name}]}
 
     with patch(
-        "src.sdk_services.ad_group.ad_group_criterion_service.serialize_proto_message",
+        "src.services.ad_group.ad_group_criterion_service.serialize_proto_message",
         return_value=expected_result,
     ):
         # Act
@@ -577,7 +591,7 @@ async def test_update_criterion_bid_partial(
     expected_result = {"results": [{"resource_name": criterion_resource_name}]}
 
     with patch(
-        "src.sdk_services.ad_group.ad_group_criterion_service.serialize_proto_message",
+        "src.services.ad_group.ad_group_criterion_service.serialize_proto_message",
         return_value=expected_result,
     ):
         # Act
@@ -628,7 +642,7 @@ async def test_remove_ad_group_criterion(
     expected_result = {"results": [{"resource_name": criterion_resource_name}]}
 
     with patch(
-        "src.sdk_services.ad_group.ad_group_criterion_service.serialize_proto_message",
+        "src.services.ad_group.ad_group_criterion_service.serialize_proto_message",
         return_value=expected_result,
     ):
         # Act
@@ -656,6 +670,113 @@ async def test_remove_ad_group_criterion(
         level="info",
         message=f"Removed ad group criterion: {criterion_resource_name}",
     )
+
+
+@pytest.mark.asyncio
+async def test_update_criterion_status_pause(
+    ad_group_criterion_service: AdGroupCriterionService,
+    mock_sdk_client: Any,
+    mock_ctx: Context,
+) -> None:
+    """Pause path: PAUSED enum set, update_mask is exactly ['status']."""
+    customer_id = "1234567890"
+    criterion_resource_name = f"customers/{customer_id}/adGroupCriteria/123~456"
+
+    mock_response = Mock(spec=MutateAdGroupCriteriaResponse)
+    mock_response.results = []
+    mock_response.results.append(Mock(resource_name=criterion_resource_name))  # type: ignore
+
+    mock_client = ad_group_criterion_service.client  # type: ignore
+    mock_client.mutate_ad_group_criteria.return_value = mock_response  # type: ignore
+
+    expected_result = {"results": [{"resource_name": criterion_resource_name}]}
+    with patch(
+        "src.services.ad_group.ad_group_criterion_service.serialize_proto_message",
+        return_value=expected_result,
+    ):
+        result = await ad_group_criterion_service.update_criterion_status(
+            ctx=mock_ctx,
+            customer_id=customer_id,
+            criterion_resource_name=criterion_resource_name,
+            status="PAUSED",
+        )
+
+    assert result == expected_result
+
+    call_args = mock_client.mutate_ad_group_criteria.call_args  # type: ignore
+    request = call_args[1]["request"]
+    assert request.customer_id == customer_id
+    assert len(request.operations) == 1
+    op = request.operations[0]
+    assert op.update.resource_name == criterion_resource_name
+    assert (
+        op.update.status
+        == AdGroupCriterionStatusEnum.AdGroupCriterionStatus.PAUSED
+    )
+    assert list(op.update_mask.paths) == ["status"]
+
+    mock_ctx.log.assert_called_once_with(  # type: ignore
+        level="info",
+        message=(
+            f"Updated criterion status to PAUSED: {criterion_resource_name}"
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_criterion_status_enable_lowercase(
+    ad_group_criterion_service: AdGroupCriterionService,
+    mock_sdk_client: Any,
+    mock_ctx: Context,
+) -> None:
+    """Status arg is case-insensitive: 'enabled' resolves to ENABLED."""
+    customer_id = "1234567890"
+    criterion_resource_name = f"customers/{customer_id}/adGroupCriteria/123~456"
+
+    mock_response = Mock(spec=MutateAdGroupCriteriaResponse)
+    mock_response.results = []
+    mock_response.results.append(Mock(resource_name=criterion_resource_name))  # type: ignore
+
+    mock_client = ad_group_criterion_service.client  # type: ignore
+    mock_client.mutate_ad_group_criteria.return_value = mock_response  # type: ignore
+
+    with patch(
+        "src.services.ad_group.ad_group_criterion_service.serialize_proto_message",
+        return_value={"ok": True},
+    ):
+        await ad_group_criterion_service.update_criterion_status(
+            ctx=mock_ctx,
+            customer_id=customer_id,
+            criterion_resource_name=criterion_resource_name,
+            status="enabled",
+        )
+
+    op = mock_client.mutate_ad_group_criteria.call_args[1]["request"].operations[0]  # type: ignore
+    assert (
+        op.update.status
+        == AdGroupCriterionStatusEnum.AdGroupCriterionStatus.ENABLED
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_criterion_status_invalid_value(
+    ad_group_criterion_service: AdGroupCriterionService,
+    mock_sdk_client: Any,
+    mock_ctx: Context,
+) -> None:
+    """Invalid status string raises before any API call."""
+    mock_client = ad_group_criterion_service.client  # type: ignore
+
+    with pytest.raises(Exception, match="Invalid status"):
+        await ad_group_criterion_service.update_criterion_status(
+            ctx=mock_ctx,
+            customer_id="1234567890",
+            criterion_resource_name="customers/1234567890/adGroupCriteria/1~2",
+            status="DISABLED",  # not a valid value
+        )
+
+    # API was never called
+    mock_client.mutate_ad_group_criteria.assert_not_called()  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -854,7 +975,7 @@ def test_register_ad_group_criterion_tools() -> None:
     assert isinstance(service, AdGroupCriterionService)
 
     # Verify that tools were registered
-    assert mock_mcp.tool.call_count == 5  # 5 tools registered  # type: ignore
+    assert mock_mcp.tool.call_count == 6  # 6 tools registered  # type: ignore
 
     # Verify tool functions were passed
     registered_tools = [call[0][0] for call in mock_mcp.tool.call_args_list]  # type: ignore
@@ -866,6 +987,7 @@ def test_register_ad_group_criterion_tools() -> None:
         "add_demographic_criteria",
         "update_criterion_bid",
         "remove_ad_group_criterion",
+        "update_criterion_status",
     ]
 
     assert set(tool_names) == set(expected_tools)

@@ -305,6 +305,14 @@ class AdGroupCriterionService:
                 self.client.mutate_ad_group_criteria(request=request)
             )
 
+            await ctx.log(
+                level="info",
+                message=(
+                    f"Added {len(demographics)} demographic criteria "
+                    f"to ad group {ad_group_id}"
+                ),
+            )
+
             return serialize_proto_message(response)
 
         except GoogleAdsException as e:
@@ -429,6 +437,69 @@ class AdGroupCriterionService:
             raise Exception(error_msg) from e
         except Exception as e:
             error_msg = f"Failed to remove ad group criterion: {str(e)}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+
+    async def update_criterion_status(
+        self,
+        ctx: Context,
+        customer_id: str,
+        criterion_resource_name: str,
+        status: str,
+    ) -> Dict[str, Any]:
+        """Update the status of an ad group criterion (pause / enable / remove).
+
+        Args:
+            ctx: FastMCP context
+            customer_id: The customer ID
+            criterion_resource_name: The full resource name of the criterion
+            status: New status. One of "ENABLED", "PAUSED", "REMOVED".
+
+        Returns:
+            Updated criterion details
+        """
+        try:
+            customer_id = format_customer_id(customer_id)
+
+            status_upper = status.strip().upper()
+            valid = {"ENABLED", "PAUSED", "REMOVED"}
+            if status_upper not in valid:
+                raise ValueError(
+                    f"Invalid status '{status}'. Must be one of {sorted(valid)}."
+                )
+
+            ad_group_criterion = AdGroupCriterion()
+            ad_group_criterion.resource_name = criterion_resource_name
+            ad_group_criterion.status = getattr(
+                AdGroupCriterionStatusEnum.AdGroupCriterionStatus, status_upper
+            )
+
+            operation = AdGroupCriterionOperation()
+            operation.update = ad_group_criterion
+            operation.update_mask.CopyFrom(field_mask_pb2.FieldMask(paths=["status"]))
+
+            request = MutateAdGroupCriteriaRequest()
+            request.customer_id = customer_id
+            request.operations = [operation]
+
+            response = self.client.mutate_ad_group_criteria(request=request)
+
+            await ctx.log(
+                level="info",
+                message=(
+                    f"Updated criterion status to {status_upper}: "
+                    f"{criterion_resource_name}"
+                ),
+            )
+
+            return serialize_proto_message(response)
+
+        except GoogleAdsException as e:
+            error_msg = f"Google Ads API error: {e.failure}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+        except Exception as e:
+            error_msg = f"Failed to update criterion status: {str(e)}"
             await ctx.log(level="error", message=error_msg)
             raise Exception(error_msg) from e
 
@@ -570,6 +641,34 @@ def create_ad_group_criterion_tools(
             criterion_resource_name=criterion_resource_name,
         )
 
+    async def update_criterion_status(
+        ctx: Context,
+        customer_id: str,
+        criterion_resource_name: str,
+        status: str,
+    ) -> Dict[str, Any]:
+        """Update the status of an ad group criterion (pause / enable / remove).
+
+        Use this to pause or re-enable a keyword (or any ad group criterion)
+        without deleting it. For Grant compliance and quality-score-driven
+        keyword pauses this is the canonical tool; do NOT use remove unless
+        the deletion is intentional and irreversible.
+
+        Args:
+            customer_id: The customer ID
+            criterion_resource_name: The full resource name of the criterion
+            status: New status. One of "ENABLED", "PAUSED", "REMOVED".
+
+        Returns:
+            Updated criterion details
+        """
+        return await service.update_criterion_status(
+            ctx=ctx,
+            customer_id=customer_id,
+            criterion_resource_name=criterion_resource_name,
+            status=status,
+        )
+
     tools.extend(
         [
             add_keywords,
@@ -577,6 +676,7 @@ def create_ad_group_criterion_tools(
             add_demographic_criteria,
             update_criterion_bid,
             remove_ad_group_criterion,
+            update_criterion_status,
         ]
     )
     return tools
