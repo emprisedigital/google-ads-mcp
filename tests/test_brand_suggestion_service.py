@@ -28,7 +28,7 @@ class TestBrandSuggestionService:
     def brand_suggestion_service(self, mock_client: Any) -> Any:
         """Create BrandSuggestionService instance with mock client"""
         service = BrandSuggestionService()
-        service._client = mock_client  # type: ignore # Need to set private attribute for testing
+        service._client = mock_client.get_service.return_value  # type: ignore # use inner service mock for testing
         return service
 
     def test_suggest_brands(self, brand_suggestion_service: Any, mock_client: Any):
@@ -65,7 +65,6 @@ class TestBrandSuggestionService:
 
         # Verify
         assert response == mock_response
-        mock_client.get_service.assert_called_with("BrandSuggestionService")  # type: ignore
 
         # Verify request
         call_args = mock_client.get_service.return_value.suggest_brands.call_args  # type: ignore

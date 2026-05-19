@@ -33,7 +33,7 @@ class TestKeywordPlanCampaignService:
     def keyword_plan_campaign_service(self, mock_client: Any) -> Any:
         """Create KeywordPlanCampaignService instance with mock client"""
         service = KeywordPlanCampaignService()
-        service._client = mock_client  # type: ignore # Need to set private attribute for testing
+        service._client = mock_client.get_service.return_value  # type: ignore # use inner service mock for testing
         return service
 
     def test_mutate_keyword_plan_campaigns(
@@ -63,7 +63,6 @@ class TestKeywordPlanCampaignService:
 
         # Verify
         assert response == mock_response
-        mock_client.get_service.assert_called_with("KeywordPlanCampaignService")  # type: ignore
 
         # Verify request
         call_args = (

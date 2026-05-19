@@ -97,16 +97,15 @@ class CustomerService:
             await ctx.log(level="error", message=error_msg)
             raise Exception(error_msg) from e
 
-    async def list_accessible_customers(
-        self, ctx: Context
-    ) -> ListAccessibleCustomersResponse:
+    async def list_accessible_customers(self, ctx: Context) -> List[str]:
         """List all accessible customers for the authenticated user.
 
         Args:
             ctx: FastMCP context
 
         Returns:
-            List of accessible customer IDs
+            List of accessible customer IDs (10-digit strings, no resource
+            prefix).
         """
         try:
             # Create the request
@@ -116,12 +115,6 @@ class CustomerService:
             response: ListAccessibleCustomersResponse = (
                 self.client.list_accessible_customers(request=request)
             )
-            await ctx.log(
-                level="info",
-                message=f"ListAccessibleCustomersResponse: {response.resource_names}",
-            )
-            return response
-
             customer_ids = response.resource_names
 
             await ctx.log(
@@ -182,14 +175,13 @@ def create_customer_tools(
             time_zone=time_zone,
         )
 
-    async def list_accessible_customers(ctx: Context) -> Dict[str, Any]:
+    async def list_accessible_customers(ctx: Context) -> List[str]:
         """List all accessible customers for the authenticated user.
 
         Returns:
-            List of accessible customer IDs
+            List of accessible customer IDs (10-digit strings).
         """
-        response = await service.list_accessible_customers(ctx=ctx)
-        return serialize_proto_message(response)
+        return await service.list_accessible_customers(ctx=ctx)
 
     tools.extend([create_customer_client, list_accessible_customers])
     return tools

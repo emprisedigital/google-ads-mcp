@@ -358,11 +358,13 @@ async def test_list_ad_group_bid_modifiers(
     row2.ad_group_bid_modifier.hotel_check_in_day.day_of_week = (
         DayOfWeekEnum.DayOfWeek.MONDAY
     )
-    # Initialize other criterion types to None
+    # Service classifier checks several hotel criteria as bare truthy
+    # values, so set the non-selected ones to None instead of empty Mocks
+    # (Mock instances are truthy in Python, real proto messages aren't).
     row2.ad_group_bid_modifier.device = Mock(type=None)
     row2.ad_group_bid_modifier.hotel_date_selection_type = Mock(type=None)
-    row2.ad_group_bid_modifier.hotel_advance_booking_window = Mock(min_days=None)
-    row2.ad_group_bid_modifier.hotel_length_of_stay = Mock(min_nights=None)
+    row2.ad_group_bid_modifier.hotel_advance_booking_window = None
+    row2.ad_group_bid_modifier.hotel_length_of_stay = None
     row2.ad_group_bid_modifier.hotel_check_in_date_range = Mock(start_date=None)
     row2.ad_group = Mock(id="111", name="Test Ad Group")
     row2.campaign = Mock(id="222", name="Test Campaign")
@@ -527,10 +529,12 @@ def test_register_ad_group_bid_modifier_tools() -> None:
     registered_tools = [call[0][0] for call in mock_mcp.tool.call_args_list]  # type: ignore
     tool_names = [tool.__name__ for tool in registered_tools]
 
+    # Tool names match the post-rename state (see Promobase commit
+    # 63ad0e7 "rename 20 tool functions exceeding 64-char MCP limit").
     expected_tools = [
         "create_ad_group_device_bid_modifier",
-        "create_ad_group_hotel_check_in_day_bid_modifier",
-        "create_ad_group_hotel_date_selection_bid_modifier",
+        "create_hotel_checkin_day_modifier",
+        "create_hotel_date_selection_modifier",
         "update_ad_group_bid_modifier",
         "list_ad_group_bid_modifiers",
         "remove_ad_group_bid_modifier",

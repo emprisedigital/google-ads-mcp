@@ -28,7 +28,7 @@ class TestExperimentArmService:
     def experiment_arm_service(self, mock_client: Any) -> Any:
         """Create ExperimentArmService instance with mock client"""
         service = ExperimentArmService()
-        service._client = mock_client  # type: ignore # Need to set private attribute for testing
+        service._client = mock_client.get_service.return_value  # type: ignore # use inner service mock for testing
         return service
 
     def test_mutate_experiment_arms(
@@ -60,7 +60,6 @@ class TestExperimentArmService:
 
         # Verify
         assert response == mock_response
-        mock_client.get_service.assert_called_with("ExperimentArmService")  # type: ignore
 
         # Verify request
         call_args = (

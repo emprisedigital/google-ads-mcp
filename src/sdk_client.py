@@ -23,11 +23,21 @@ class GoogleAdsSdkClient:
         with open(self.config_path, "r") as f:
             config = yaml.safe_load(f)
 
-        # Ensure required fields are present
-        required_fields = ["developer_token", "json_key_file_path"]
-        for field in required_fields:
-            if field not in config:
-                raise ValueError(f"Missing required field in config: {field}")
+        # Ensure developer_token is present
+        if "developer_token" not in config:
+            raise ValueError("Missing required field in config: developer_token")
+
+        # Must have either service account or OAuth credentials
+        has_service_account = "json_key_file_path" in config
+        has_oauth = all(
+            k in config for k in ["client_id", "client_secret", "refresh_token"]
+        )
+
+        if not has_service_account and not has_oauth:
+            raise ValueError(
+                "Missing auth config: provide either json_key_file_path "
+                "or (client_id, client_secret, refresh_token)"
+            )
 
         return config
 
@@ -40,9 +50,16 @@ class GoogleAdsSdkClient:
             # Build configuration dictionary for GoogleAdsClient
             client_config = {
                 "developer_token": config["developer_token"],
-                "use_proto_plus": True,  # Use proto-plus for better type hints
-                "json_key_file_path": config["json_key_file_path"],
+                "use_proto_plus": config.get("use_proto_plus", True),
             }
+
+            # Support both service account and OAuth authentication
+            if "json_key_file_path" in config:
+                client_config["json_key_file_path"] = config["json_key_file_path"]
+            else:
+                client_config["client_id"] = config["client_id"]
+                client_config["client_secret"] = config["client_secret"]
+                client_config["refresh_token"] = config["refresh_token"]
 
             # Add optional fields if present
             if "login_customer_id" in config:

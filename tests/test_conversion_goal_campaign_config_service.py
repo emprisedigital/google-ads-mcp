@@ -31,7 +31,7 @@ class TestConversionGoalCampaignConfigService:
     def conversion_goal_campaign_config_service(self, mock_client: Any) -> Any:
         """Create ConversionGoalCampaignConfigService instance with mock client"""
         service = ConversionGoalCampaignConfigService()
-        service._client = mock_client  # type: ignore # Need to set private attribute for testing
+        service._client = mock_client.get_service.return_value  # type: ignore # use inner service mock for testing
         return service
 
     def test_mutate_conversion_goal_campaign_configs(
@@ -58,9 +58,6 @@ class TestConversionGoalCampaignConfigService:
 
         # Verify
         assert response == mock_response
-        mock_client.get_service.assert_called_with(  # type: ignore
-            "ConversionGoalCampaignConfigService"
-        )
 
         # Verify request
         call_args = mock_client.get_service.return_value.mutate_conversion_goal_campaign_configs.call_args  # type: ignore

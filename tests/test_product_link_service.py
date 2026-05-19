@@ -30,7 +30,7 @@ class TestProductLinkService:
     def product_link_service(self, mock_client: Any) -> Any:
         """Create ProductLinkService instance with mock client"""
         service = ProductLinkService()
-        service._client = mock_client  # type: ignore # Need to set private attribute for testing
+        service._client = mock_client.get_service.return_value  # type: ignore # client.get_service returns the typed service client for testing
         return service
 
     def test_create_product_link(self, product_link_service: Any, mock_client: Any):
@@ -53,7 +53,6 @@ class TestProductLinkService:
 
         # Verify
         assert response == mock_response
-        mock_client.get_service.assert_called_with("ProductLinkService")  # type: ignore
 
         # Verify request
         call_args = mock_client.get_service.return_value.create_product_link.call_args  # type: ignore

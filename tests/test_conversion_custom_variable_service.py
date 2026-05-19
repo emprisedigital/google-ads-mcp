@@ -71,7 +71,7 @@ class TestConversionCustomVariableService:
         mock_custom_var.id = 123456
         mock_custom_var.name = "Product Category"
         mock_custom_var.tag = "product_category"
-        mock_result.conversion_custom_variable.CopyFrom(mock_custom_var)  # type: ignore
+        mock_result.conversion_custom_variable = mock_custom_var  # proto-plus assigns directly
 
         mock_response = MutateConversionCustomVariablesResponse()
         mock_response.results.append(mock_result)  # type: ignore
@@ -239,7 +239,7 @@ class TestConversionCustomVariableService:
         partial_error = status_pb2.Status()
         partial_error.code = 3  # INVALID_ARGUMENT
         partial_error.message = "Partial failure occurred"
-        mock_response.partial_failure_error.CopyFrom(partial_error)  # type: ignore
+        mock_response.partial_failure_error = partial_error  # proto-plus assigns directly
 
         mock_client.mutate_conversion_custom_variables.return_value = mock_response  # type: ignore
 
