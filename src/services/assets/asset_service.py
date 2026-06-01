@@ -5,11 +5,18 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 from fastmcp import Context, FastMCP
 from google.ads.googleads.errors import GoogleAdsException
 from google.ads.googleads.v24.common.types.asset_types import (
+    CallAsset,
+    CalloutAsset,
     ImageAsset,
+    SitelinkAsset,
+    StructuredSnippetAsset,
     TextAsset,
     YoutubeVideoAsset,
 )
 from google.ads.googleads.v24.enums.types.asset_type import AssetTypeEnum
+from google.ads.googleads.v24.enums.types.call_conversion_reporting_state import (
+    CallConversionReportingStateEnum,
+)
 from google.ads.googleads.v24.resources.types.asset import Asset
 from google.ads.googleads.v24.services.services.asset_service import (
     AssetServiceClient,
@@ -100,6 +107,143 @@ class AssetService:
             raise Exception(error_msg) from e
         except Exception as e:
             error_msg = f"Failed to create text asset: {str(e)}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+
+    async def create_callout_asset(
+        self,
+        ctx: Context,
+        customer_id: str,
+        callout_text: str,
+    ) -> Dict[str, Any]:
+        """Create a callout asset (callout extension)."""
+        try:
+            customer_id = format_customer_id(customer_id)
+            asset = Asset()
+            asset.type_ = AssetTypeEnum.AssetType.CALLOUT
+            asset.name = f"Callout: {callout_text[:40]}"
+            callout = CalloutAsset()
+            callout.callout_text = callout_text
+            asset.callout_asset = callout
+            operation = AssetOperation()
+            operation.create = asset
+            request = MutateAssetsRequest()
+            request.customer_id = customer_id
+            request.operations = [operation]
+            response: MutateAssetsResponse = self.client.mutate_assets(request=request)
+            return serialize_proto_message(response)
+        except GoogleAdsException as e:
+            error_msg = f"Google Ads API error: {e.failure}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+        except Exception as e:
+            error_msg = f"Failed to create callout asset: {str(e)}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+
+    async def create_sitelink_asset(
+        self,
+        ctx: Context,
+        customer_id: str,
+        link_text: str,
+        final_url: str,
+        description1: Optional[str] = None,
+        description2: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create a sitelink asset (sitelink extension)."""
+        try:
+            customer_id = format_customer_id(customer_id)
+            asset = Asset()
+            asset.type_ = AssetTypeEnum.AssetType.SITELINK
+            asset.name = f"Sitelink: {link_text[:40]}"
+            asset.final_urls.append(final_url)
+            sitelink = SitelinkAsset()
+            sitelink.link_text = link_text
+            if description1:
+                sitelink.description1 = description1
+            if description2:
+                sitelink.description2 = description2
+            asset.sitelink_asset = sitelink
+            operation = AssetOperation()
+            operation.create = asset
+            request = MutateAssetsRequest()
+            request.customer_id = customer_id
+            request.operations = [operation]
+            response: MutateAssetsResponse = self.client.mutate_assets(request=request)
+            return serialize_proto_message(response)
+        except GoogleAdsException as e:
+            error_msg = f"Google Ads API error: {e.failure}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+        except Exception as e:
+            error_msg = f"Failed to create sitelink asset: {str(e)}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+
+    async def create_structured_snippet_asset(
+        self,
+        ctx: Context,
+        customer_id: str,
+        header: str,
+        values: List[str],
+    ) -> Dict[str, Any]:
+        """Create a structured snippet asset (header + values, e.g. Services)."""
+        try:
+            customer_id = format_customer_id(customer_id)
+            asset = Asset()
+            asset.type_ = AssetTypeEnum.AssetType.STRUCTURED_SNIPPET
+            asset.name = f"Snippet: {header} {'/'.join(values)}"[:60]
+            snippet = StructuredSnippetAsset()
+            snippet.header = header
+            snippet.values.extend(values)
+            asset.structured_snippet_asset = snippet
+            operation = AssetOperation()
+            operation.create = asset
+            request = MutateAssetsRequest()
+            request.customer_id = customer_id
+            request.operations = [operation]
+            response: MutateAssetsResponse = self.client.mutate_assets(request=request)
+            return serialize_proto_message(response)
+        except GoogleAdsException as e:
+            error_msg = f"Google Ads API error: {e.failure}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+        except Exception as e:
+            error_msg = f"Failed to create structured snippet asset: {str(e)}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+
+    async def create_call_asset(
+        self,
+        ctx: Context,
+        customer_id: str,
+        phone_number: str,
+        country_code: str = "US",
+    ) -> Dict[str, Any]:
+        """Create a call asset (call extension), counting account-level call conversions."""
+        try:
+            customer_id = format_customer_id(customer_id)
+            asset = Asset()
+            asset.type_ = AssetTypeEnum.AssetType.CALL
+            asset.name = f"Call: {phone_number}"
+            call = CallAsset()
+            call.country_code = country_code
+            call.phone_number = phone_number
+            call.call_conversion_reporting_state = CallConversionReportingStateEnum.CallConversionReportingState.USE_ACCOUNT_LEVEL_CALL_CONVERSION_ACTION
+            asset.call_asset = call
+            operation = AssetOperation()
+            operation.create = asset
+            request = MutateAssetsRequest()
+            request.customer_id = customer_id
+            request.operations = [operation]
+            response: MutateAssetsResponse = self.client.mutate_assets(request=request)
+            return serialize_proto_message(response)
+        except GoogleAdsException as e:
+            error_msg = f"Google Ads API error: {e.failure}"
+            await ctx.log(level="error", message=error_msg)
+            raise Exception(error_msg) from e
+        except Exception as e:
+            error_msg = f"Failed to create call asset: {str(e)}"
             await ctx.log(level="error", message=error_msg)
             raise Exception(error_msg) from e
 
@@ -421,11 +565,68 @@ def create_asset_tools(service: AssetService) -> List[Callable[..., Awaitable[An
             limit=limit,
         )
 
+    async def create_callout_asset(
+        ctx: Context,
+        customer_id: str,
+        callout_text: str,
+    ) -> Dict[str, Any]:
+        """Create a callout asset (callout extension)."""
+        return await service.create_callout_asset(
+            ctx=ctx, customer_id=customer_id, callout_text=callout_text
+        )
+
+    async def create_sitelink_asset(
+        ctx: Context,
+        customer_id: str,
+        link_text: str,
+        final_url: str,
+        description1: Optional[str] = None,
+        description2: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create a sitelink asset (sitelink extension). final_url goes on the asset."""
+        return await service.create_sitelink_asset(
+            ctx=ctx,
+            customer_id=customer_id,
+            link_text=link_text,
+            final_url=final_url,
+            description1=description1,
+            description2=description2,
+        )
+
+    async def create_structured_snippet_asset(
+        ctx: Context,
+        customer_id: str,
+        header: str,
+        values: List[str],
+    ) -> Dict[str, Any]:
+        """Create a structured snippet asset (e.g. header='Services', values=[...])."""
+        return await service.create_structured_snippet_asset(
+            ctx=ctx, customer_id=customer_id, header=header, values=values
+        )
+
+    async def create_call_asset(
+        ctx: Context,
+        customer_id: str,
+        phone_number: str,
+        country_code: str = "US",
+    ) -> Dict[str, Any]:
+        """Create a call asset (call extension)."""
+        return await service.create_call_asset(
+            ctx=ctx,
+            customer_id=customer_id,
+            phone_number=phone_number,
+            country_code=country_code,
+        )
+
     tools.extend(
         [
             create_text_asset,
             create_image_asset,
             create_youtube_video_asset,
+            create_callout_asset,
+            create_sitelink_asset,
+            create_structured_snippet_asset,
+            create_call_asset,
             search_assets,
         ]
     )
