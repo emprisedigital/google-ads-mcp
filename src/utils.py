@@ -1,8 +1,30 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 from google.protobuf.json_format import MessageToDict
+
+
+def exemptible_policy_keys_by_operation(failure: Any) -> Dict[int, List[Any]]:
+    """Map operation index -> list of exemptible PolicyViolationKeys from a GoogleAdsFailure.
+
+    Lets a mutate be retried with operation.exempt_policy_violation_keys so
+    policy-exemptible content (e.g. PRC abortion / pregnancy-test keywords and ads)
+    can be created via the API instead of erroring out.
+    """
+    keys_by_op: Dict[int, List[Any]] = {}
+    for error in failure.errors:
+        pvd = error.details.policy_violation_details
+        if not (pvd.key.policy_name or pvd.key.violating_text):
+            continue
+        if not pvd.is_exemptible:
+            continue
+        op_index = 0
+        for fpe in error.location.field_path_elements:
+            if fpe.field_name == "operations":
+                op_index = fpe.index
+        keys_by_op.setdefault(op_index, []).append(pvd.key)
+    return keys_by_op
 
 
 def get_logger(name: str) -> logging.Logger:

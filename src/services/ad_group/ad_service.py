@@ -25,7 +25,12 @@ from google.ads.googleads.v24.services.types.ad_group_ad_service import (
 from google.protobuf import field_mask_pb2
 
 from src.sdk_client import get_sdk_client
-from src.utils import format_customer_id, get_logger, serialize_proto_message
+from src.utils import (
+    exemptible_policy_keys_by_operation,
+    format_customer_id,
+    get_logger,
+    serialize_proto_message,
+)
 
 logger = get_logger(__name__)
 
@@ -57,6 +62,7 @@ class AdService:
         path1: Optional[str] = None,
         path2: Optional[str] = None,
         status: AdGroupAdStatusEnum.AdGroupAdStatus = AdGroupAdStatusEnum.AdGroupAdStatus.PAUSED,
+        exempt_policy_violations: bool = False,
     ) -> Dict[str, Any]:
         """Create a responsive search ad.
 
@@ -120,10 +126,24 @@ class AdService:
             request.customer_id = customer_id
             request.operations = [operation]
 
-            # Make the API call
-            response: MutateAdGroupAdsResponse = self.client.mutate_ad_group_ads(
-                request=request
-            )
+            # Make the API call (retry with policy exemptions if requested)
+            try:
+                response: MutateAdGroupAdsResponse = self.client.mutate_ad_group_ads(
+                    request=request
+                )
+            except GoogleAdsException as policy_err:
+                keys_by_op = (
+                    exemptible_policy_keys_by_operation(policy_err.failure)
+                    if exempt_policy_violations
+                    else {}
+                )
+                if not keys_by_op:
+                    raise
+                for op_index, keys in keys_by_op.items():
+                    request.operations[op_index].exempt_policy_violation_keys.extend(
+                        keys
+                    )
+                response = self.client.mutate_ad_group_ads(request=request)
 
             await ctx.log(
                 level="info",
@@ -315,8 +335,12 @@ def create_ad_tools(service: AdService) -> List[Callable[..., Awaitable[Any]]]:
         path1: Optional[str] = None,
         path2: Optional[str] = None,
         status: str = "PAUSED",
+        exempt_policy_violations: bool = False,
     ) -> Dict[str, Any]:
         """Create a responsive search ad.
+
+        Set exempt_policy_violations=True to acknowledge exemptible Google Ads
+        policy violations (e.g. PRC abortion / pregnancy ad copy).
 
         Args:
             customer_id: The customer ID
@@ -344,6 +368,7 @@ def create_ad_tools(service: AdService) -> List[Callable[..., Awaitable[Any]]]:
             path1=path1,
             path2=path2,
             status=status_enum,
+            exempt_policy_violations=exempt_policy_violations,
         )
 
     async def create_expanded_text_ad(
