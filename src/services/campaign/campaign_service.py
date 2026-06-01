@@ -4,19 +4,34 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from fastmcp import Context, FastMCP
 from google.ads.googleads.errors import GoogleAdsException
-from google.ads.googleads.v20.common.types import ManualCpc
-from google.ads.googleads.v20.enums.types.advertising_channel_type import (
+from google.ads.googleads.v24.common.types import ManualCpc
+from google.ads.googleads.v24.common.types.bidding import (
+    MaximizeConversionValue,
+    MaximizeConversions,
+    TargetCpa,
+    TargetSpend,
+)
+from google.ads.googleads.v24.enums.types.advertising_channel_type import (
     AdvertisingChannelTypeEnum,
 )
-from google.ads.googleads.v20.enums.types.campaign_experiment_type import (
+from google.ads.googleads.v24.enums.types.campaign_experiment_type import (
     CampaignExperimentTypeEnum,
 )
-from google.ads.googleads.v20.enums.types.campaign_status import CampaignStatusEnum
-from google.ads.googleads.v20.resources.types.campaign import Campaign
-from google.ads.googleads.v20.services.services.campaign_service import (
+from google.ads.googleads.v24.enums.types.campaign_status import CampaignStatusEnum
+from google.ads.googleads.v24.enums.types.eu_political_advertising_status import (
+    EuPoliticalAdvertisingStatusEnum,
+)
+from google.ads.googleads.v24.enums.types.negative_geo_target_type import (
+    NegativeGeoTargetTypeEnum,
+)
+from google.ads.googleads.v24.enums.types.positive_geo_target_type import (
+    PositiveGeoTargetTypeEnum,
+)
+from google.ads.googleads.v24.resources.types.campaign import Campaign
+from google.ads.googleads.v24.services.services.campaign_service import (
     CampaignServiceClient,
 )
-from google.ads.googleads.v20.services.types.campaign_service import (
+from google.ads.googleads.v24.services.types.campaign_service import (
     CampaignOperation,
     MutateCampaignsRequest,
     MutateCampaignsResponse,
@@ -55,6 +70,14 @@ class CampaignService:
         status: CampaignStatusEnum.CampaignStatus = CampaignStatusEnum.CampaignStatus.PAUSED,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        bidding_strategy_type: str = "MANUAL_CPC",
+        target_cpa_micros: Optional[int] = None,
+        target_roas: Optional[float] = None,
+        target_google_search: bool = True,
+        target_search_network: bool = True,
+        target_content_network: bool = True,
+        target_partner_search_network: bool = False,
+        geo_target_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a new campaign.
 
@@ -78,11 +101,23 @@ class CampaignService:
             campaign = Campaign()
             campaign.name = name
             campaign.campaign_budget = budget_resource_name
-            # Set network settings
-            campaign.network_settings.target_google_search = True
-            campaign.network_settings.target_search_network = True
-            campaign.network_settings.target_content_network = True
-            campaign.network_settings.target_partner_search_network = False
+            # Set network settings (parameterized; e.g. Search Partners off for PRC)
+            campaign.network_settings.target_google_search = target_google_search
+            campaign.network_settings.target_search_network = target_search_network
+            campaign.network_settings.target_content_network = target_content_network
+            campaign.network_settings.target_partner_search_network = (
+                target_partner_search_network
+            )
+
+            # Set geo target type (PRESENCE vs PRESENCE_OR_INTEREST) when provided
+            if geo_target_type:
+                campaign.geo_target_type_setting.positive_geo_target_type = getattr(
+                    PositiveGeoTargetTypeEnum.PositiveGeoTargetType,
+                    geo_target_type.upper(),
+                )
+                campaign.geo_target_type_setting.negative_geo_target_type = (
+                    NegativeGeoTargetTypeEnum.NegativeGeoTargetType.PRESENCE
+                )
 
             # Set advertising channel type
             campaign.advertising_channel_type = advertising_channel_type
@@ -94,15 +129,34 @@ class CampaignService:
             campaign.experiment_type = (
                 CampaignExperimentTypeEnum.CampaignExperimentType.BASE
             )
-            # Set manual CPC bidding strategy
-            manual_cpc: ManualCpc = ManualCpc()
-            campaign.manual_cpc = manual_cpc
+            # Set bidding strategy (parameterized). Standard (campaign-level) strategies.
+            bst = bidding_strategy_type.upper()
+            if bst == "MAXIMIZE_CONVERSIONS":
+                campaign.maximize_conversions = MaximizeConversions()
+                if target_cpa_micros:
+                    campaign.maximize_conversions.target_cpa_micros = target_cpa_micros
+            elif bst == "MAXIMIZE_CONVERSION_VALUE":
+                campaign.maximize_conversion_value = MaximizeConversionValue()
+                if target_roas:
+                    campaign.maximize_conversion_value.target_roas = target_roas
+            elif bst in ("MAXIMIZE_CLICKS", "TARGET_SPEND"):
+                campaign.target_spend = TargetSpend()
+            elif bst == "TARGET_CPA":
+                target_cpa_obj = TargetCpa()
+                if target_cpa_micros:
+                    target_cpa_obj.target_cpa_micros = target_cpa_micros
+                campaign.target_cpa = target_cpa_obj
+            else:  # MANUAL_CPC (default)
+                campaign.manual_cpc = ManualCpc()
 
-            # Set dates if provided
+            # EU political advertising declaration (required for campaign create in v23+)
+            campaign.contains_eu_political_advertising = EuPoliticalAdvertisingStatusEnum.EuPoliticalAdvertisingStatus.DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING
+
+            # Set dates if provided (v23+: start_date/end_date -> start_date_time/end_date_time)
             if start_date:
-                campaign.start_date = start_date.replace("-", "")
+                campaign.start_date_time = start_date
             if end_date:
-                campaign.end_date = end_date.replace("-", "")
+                campaign.end_date_time = end_date
 
             # Create the operation
             operation = CampaignOperation()
@@ -172,12 +226,12 @@ class CampaignService:
                 update_mask_fields.append("status")
 
             if start_date is not None:
-                campaign.start_date = start_date.replace("-", "")
-                update_mask_fields.append("start_date")
+                campaign.start_date_time = start_date
+                update_mask_fields.append("start_date_time")
 
             if end_date is not None:
-                campaign.end_date = end_date.replace("-", "")
-                update_mask_fields.append("end_date")
+                campaign.end_date_time = end_date
+                update_mask_fields.append("end_date_time")
 
             # Create the operation
             operation = CampaignOperation()
@@ -230,8 +284,21 @@ def create_campaign_tools(
         status: str = "PAUSED",
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        bidding_strategy_type: str = "MANUAL_CPC",
+        target_cpa_micros: Optional[int] = None,
+        target_roas: Optional[float] = None,
+        target_google_search: bool = True,
+        target_search_network: bool = True,
+        target_content_network: bool = True,
+        target_partner_search_network: bool = False,
+        geo_target_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a new campaign.
+
+        bidding_strategy_type: MANUAL_CPC | MAXIMIZE_CONVERSIONS | MAXIMIZE_CONVERSION_VALUE
+            | MAXIMIZE_CLICKS | TARGET_CPA (use target_cpa_micros / target_roas as needed).
+        target_partner_search_network: set False to turn Search Partners off.
+        geo_target_type: PRESENCE (people in your targeted locations) or PRESENCE_OR_INTEREST.
 
         Args:
             customer_id: The customer ID
@@ -260,6 +327,14 @@ def create_campaign_tools(
             status=status_enum,
             start_date=start_date,
             end_date=end_date,
+            bidding_strategy_type=bidding_strategy_type,
+            target_cpa_micros=target_cpa_micros,
+            target_roas=target_roas,
+            target_google_search=target_google_search,
+            target_search_network=target_search_network,
+            target_content_network=target_content_network,
+            target_partner_search_network=target_partner_search_network,
+            geo_target_type=geo_target_type,
         )
 
     async def update_campaign(

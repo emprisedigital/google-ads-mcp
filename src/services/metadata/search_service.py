@@ -4,10 +4,10 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from fastmcp import Context, FastMCP
 from google.ads.googleads.errors import GoogleAdsException
-from google.ads.googleads.v20.services.services.google_ads_service import (
+from google.ads.googleads.v24.services.services.google_ads_service import (
     GoogleAdsServiceClient,
 )
-from google.ads.googleads.v20.services.types.google_ads_service import (
+from google.ads.googleads.v24.services.types.google_ads_service import (
     GoogleAdsRow,
     SearchGoogleAdsRequest,
 )
@@ -64,8 +64,8 @@ class SearchService:
                     campaign.advertising_channel_type,
                     campaign.campaign_budget,
                     campaign_budget.amount_micros,
-                    campaign.start_date,
-                    campaign.end_date
+                    campaign.start_date_time,
+                    campaign.end_date_time
                 FROM campaign
             """
 

@@ -5,13 +5,13 @@ from typing import Any
 
 import pytest
 from google.ads.googleads.errors import GoogleAdsException
-from google.ads.googleads.v20.enums.types.response_content_type import (
+from google.ads.googleads.v24.enums.types.response_content_type import (
     ResponseContentTypeEnum,
 )
-from google.ads.googleads.v20.enums.types.summary_row_setting import (
+from google.ads.googleads.v24.enums.types.summary_row_setting import (
     SummaryRowSettingEnum,
 )
-from google.ads.googleads.v20.services.types.google_ads_service import (
+from google.ads.googleads.v24.services.types.google_ads_service import (
     GoogleAdsRow,
     MutateGoogleAdsResponse,
     MutateOperation,
@@ -261,7 +261,7 @@ class TestGoogleAdsService:
         google_ads_service._client = mock_client
 
         # Mock API error
-        error = GoogleAdsException(None, None, None, None)
+        error = GoogleAdsException(None, None, None, None)  # type: ignore
         error.failure = Mock()  # type: ignore
         error.failure.__str__ = Mock(return_value="Invalid query")  # type: ignore
         mock_client.search.side_effect = error  # type: ignore

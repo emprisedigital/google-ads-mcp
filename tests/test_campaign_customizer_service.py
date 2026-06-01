@@ -5,13 +5,13 @@ from typing import Any
 
 import pytest
 from google.ads.googleads.errors import GoogleAdsException
-from google.ads.googleads.v20.enums.types.customizer_attribute_type import (
+from google.ads.googleads.v24.enums.types.customizer_attribute_type import (
     CustomizerAttributeTypeEnum,
 )
-from google.ads.googleads.v20.enums.types.response_content_type import (
+from google.ads.googleads.v24.enums.types.response_content_type import (
     ResponseContentTypeEnum,
 )
-from google.ads.googleads.v20.services.types.campaign_customizer_service import (
+from google.ads.googleads.v24.services.types.campaign_customizer_service import (
     MutateCampaignCustomizersResponse,
     MutateCampaignCustomizerResult,
 )
@@ -241,7 +241,7 @@ class TestCampaignCustomizerService:
         campaign_customizer_service._client = mock_client
 
         # Mock API error
-        error = GoogleAdsException(None, None, None, None)
+        error = GoogleAdsException(None, None, None, None)  # type: ignore
         error.failure = Mock()  # type: ignore
         error.failure.__str__ = Mock(return_value="Invalid customizer attribute")  # type: ignore
         mock_client.mutate_campaign_customizers.side_effect = error  # type: ignore

@@ -4,28 +4,27 @@ import pytest
 from typing import Any
 from unittest.mock import Mock, patch
 
-from google.ads.googleads.v20.services.services.customer_asset_service import (
+from google.ads.googleads.v24.services.services.customer_asset_service import (
     CustomerAssetServiceClient,
 )
-from google.ads.googleads.v20.services.types.customer_asset_service import (
+from google.ads.googleads.v24.services.types.customer_asset_service import (
     CustomerAssetOperation,
     MutateCustomerAssetsRequest,
     MutateCustomerAssetsResponse,
     MutateCustomerAssetResult,
 )
-from google.ads.googleads.v20.enums.types.response_content_type import (
+from google.ads.googleads.v24.enums.types.response_content_type import (
     ResponseContentTypeEnum,
 )
-from google.ads.googleads.v20.enums.types.asset_field_type import (
+from google.ads.googleads.v24.enums.types.asset_field_type import (
     AssetFieldTypeEnum,
 )
-from google.ads.googleads.v20.enums.types.asset_link_status import (
+from google.ads.googleads.v24.enums.types.asset_link_status import (
     AssetLinkStatusEnum,
 )
 from google.protobuf import field_mask_pb2
 
 from src.services.assets.customer_asset_service import CustomerAssetService
-from google.ads.googleads.errors import GoogleAdsException
 
 
 class TestCustomerAssetService:
@@ -117,9 +116,7 @@ class TestCustomerAssetService:
         mock_client.mutate_customer_assets.side_effect = Exception("API Error")  # type: ignore
 
         # Act & Assert
-        with pytest.raises(
-            Exception, match="Failed to mutate customer assets"
-        ):
+        with pytest.raises(Exception, match="Failed to mutate customer assets"):
             service.mutate_customer_assets(
                 customer_id=customer_id,
                 operations=operations,
@@ -273,7 +270,10 @@ class TestCustomerAssetService:
 class TestCustomerAssetMCPServer:
     """Test cases for Customer Asset MCP server."""
 
-    @pytest.mark.xfail(reason="MCPServer-level tests patch src.servers.X.get_client which the post-refactor server modules no longer expose; needs server-test rewrite to exercise registered tools via register_X_tools()", strict=False)
+    @pytest.mark.xfail(
+        reason="MCPServer-level tests patch src.servers.X.get_client which the post-refactor server modules no longer expose; needs server-test rewrite to exercise registered tools via register_X_tools()",
+        strict=False,
+    )
     @patch("src.servers.customer_asset_server.get_client")
     async def test_create_customer_asset_tool(self, mock_get_client: Any):
         """Test create customer asset MCP tool."""
@@ -310,7 +310,10 @@ class TestCustomerAssetMCPServer:
         assert "customers/1234567890/customerAssets/123~LOGO" in response[0].text
         assert "create" in response[0].text
 
-    @pytest.mark.xfail(reason="MCPServer-level tests patch src.servers.X.get_client which the post-refactor server modules no longer expose; needs server-test rewrite to exercise registered tools via register_X_tools()", strict=False)
+    @pytest.mark.xfail(
+        reason="MCPServer-level tests patch src.servers.X.get_client which the post-refactor server modules no longer expose; needs server-test rewrite to exercise registered tools via register_X_tools()",
+        strict=False,
+    )
     @patch("src.servers.customer_asset_server.get_client")
     async def test_update_customer_asset_status_tool(self, mock_get_client: Any):
         """Test update customer asset status MCP tool."""

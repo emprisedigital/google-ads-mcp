@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 from google.ads.googleads.errors import GoogleAdsException
-from google.ads.googleads.v20.services.types.customer_label_service import (
+from google.ads.googleads.v24.services.types.customer_label_service import (
     MutateCustomerLabelsResponse,
     MutateCustomerLabelResult,
 )
@@ -145,7 +145,7 @@ class TestCustomerLabelService:
         customer_label_service._client = mock_client
 
         # Mock API error
-        error = GoogleAdsException(None, None, None, None)
+        error = GoogleAdsException(None, None, None, None)  # type: ignore
         error.failure = Mock()  # type: ignore
         error.failure.__str__ = Mock(return_value="Label not found")  # type: ignore
         mock_client.mutate_customer_labels.side_effect = error  # type: ignore

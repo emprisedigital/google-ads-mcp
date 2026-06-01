@@ -5,10 +5,10 @@ from typing import Any
 
 import pytest
 from google.ads.googleads.errors import GoogleAdsException
-from google.ads.googleads.v20.enums.types.manager_link_status import (
+from google.ads.googleads.v24.enums.types.manager_link_status import (
     ManagerLinkStatusEnum,
 )
-from google.ads.googleads.v20.services.types.customer_manager_link_service import (
+from google.ads.googleads.v24.services.types.customer_manager_link_service import (
     MoveManagerLinkResponse,
     MutateCustomerManagerLinkResponse,
     MutateCustomerManagerLinkResult,
@@ -195,7 +195,7 @@ class TestCustomerManagerLinkService:
         customer_manager_link_service._client = mock_client
 
         # Mock API error
-        error = GoogleAdsException(None, None, None, None)
+        error = GoogleAdsException(None, None, None, None)  # type: ignore
         error.failure = Mock()  # type: ignore
         error.failure.__str__ = Mock(return_value="Permission denied")  # type: ignore
         mock_client.mutate_customer_manager_link.side_effect = error  # type: ignore

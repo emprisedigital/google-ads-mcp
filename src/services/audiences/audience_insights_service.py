@@ -3,32 +3,30 @@
 from typing import Any, Dict, List, Optional, Callable, Awaitable
 
 from fastmcp import Context, FastMCP
-from google.ads.googleads.v20.services.services.audience_insights_service import (
+from google.ads.googleads.v24.services.services.audience_insights_service import (
     AudienceInsightsServiceClient,
 )
-from google.ads.googleads.v20.services.types.audience_insights_service import (
-    GenerateInsightsFinderReportRequest,
-    GenerateInsightsFinderReportResponse,
+from google.ads.googleads.v24.services.types.audience_insights_service import (
     GenerateAudienceCompositionInsightsRequest,
     GenerateAudienceCompositionInsightsResponse,
     GenerateSuggestedTargetingInsightsRequest,
     GenerateSuggestedTargetingInsightsResponse,
-    BasicInsightsAudience,
     InsightsAudience,
-    InsightsAudienceAttributeGroup,
     InsightsAudienceDefinition,
 )
-from google.ads.googleads.v20.common.types.criteria import (
+from google.ads.googleads.v24.common.types.audience_insights_attribute import (
+    InsightsAudienceAttributeGroup,
+)
+from google.ads.googleads.v24.common.types.criteria import (
     AgeRangeInfo,
     GenderInfo,
     LocationInfo,
-    UserInterestInfo,
 )
-from google.ads.googleads.v20.enums.types.audience_insights_dimension import (
+from google.ads.googleads.v24.enums.types.audience_insights_dimension import (
     AudienceInsightsDimensionEnum,
 )
-from google.ads.googleads.v20.enums.types.age_range_type import AgeRangeTypeEnum
-from google.ads.googleads.v20.enums.types.gender_type import GenderTypeEnum
+from google.ads.googleads.v24.enums.types.age_range_type import AgeRangeTypeEnum
+from google.ads.googleads.v24.enums.types.gender_type import GenderTypeEnum
 from google.ads.googleads.errors import GoogleAdsException
 
 from src.sdk_client import get_sdk_client
@@ -83,96 +81,32 @@ class AudienceInsightsService:
         Returns:
             Insights report with audience comparisons
         """
-        try:
-            customer_id = format_customer_id(customer_id)
-
-            # Create baseline audience
-            baseline_audience = BasicInsightsAudience()
-
-            # Add countries
-            for country_id in baseline_audience_countries:
-                location = LocationInfo()
-                location.geo_target_constant = f"geoTargetConstants/{country_id}"
-                baseline_audience.country_location.append(location)
-
-            # Add age ranges if provided
-            if baseline_audience_ages:
-                for age_range in baseline_audience_ages:
-                    age_info = AgeRangeInfo()
-                    age_info.type_ = getattr(AgeRangeTypeEnum.AgeRangeType, age_range)
-                    baseline_audience.age_ranges.append(age_info)
-
-            # Add gender if provided (BasicInsightsAudience only supports one gender)
-            if baseline_audience_genders and len(baseline_audience_genders) > 0:
-                gender_info = GenderInfo()
-                gender_info.type_ = getattr(
-                    GenderTypeEnum.GenderType, baseline_audience_genders[0]
-                )
-                baseline_audience.gender = gender_info
-
-            # Create specific audience (also BasicInsightsAudience)
-            specific_audience = BasicInsightsAudience()
-
-            # Add countries
-            for country_id in specific_audience_countries:
-                location = LocationInfo()
-                location.geo_target_constant = f"geoTargetConstants/{country_id}"
-                specific_audience.country_location.append(location)
-
-            # Add age ranges if provided
-            if specific_audience_ages:
-                for age_range in specific_audience_ages:
-                    age_info = AgeRangeInfo()
-                    age_info.type_ = getattr(AgeRangeTypeEnum.AgeRangeType, age_range)
-                    specific_audience.age_ranges.append(age_info)
-
-            # Add gender if provided (BasicInsightsAudience only supports one gender)
-            if specific_audience_genders and len(specific_audience_genders) > 0:
-                gender_info = GenderInfo()
-                gender_info.type_ = getattr(
-                    GenderTypeEnum.GenderType, specific_audience_genders[0]
-                )
-                specific_audience.gender = gender_info
-
-            # Add user interests if provided
-            if specific_audience_user_interests:
-                for interest_id in specific_audience_user_interests:
-                    interest_info = UserInterestInfo()
-                    interest_info.user_interest_category = (
-                        f"customers/{customer_id}/userInterests/{interest_id}"
-                    )
-                    specific_audience.user_interests.append(interest_info)
-
-            # Create request
-            request = GenerateInsightsFinderReportRequest()
-            request.customer_id = customer_id
-            request.baseline_audience = baseline_audience
-            request.specific_audience = specific_audience
-
-            # Note: In v20, GenerateInsightsFinderReportRequest doesn't have dimensions field
-            # The dimensions parameter is kept for API compatibility but not used
-
-            # Make the API call
-            response: GenerateInsightsFinderReportResponse = (
-                self.client.generate_insights_finder_report(request=request)
-            )
-
-            await ctx.log(
-                level="info",
-                message="Generated insights finder report",
-            )
-
-            # Return serialized response
-            return serialize_proto_message(response)
-
-        except GoogleAdsException as e:
-            error_msg = f"Google Ads API error: {e.failure}"
-            await ctx.log(level="error", message=error_msg)
-            raise Exception(error_msg) from e
-        except Exception as e:
-            error_msg = f"Failed to generate insights finder report: {str(e)}"
-            await ctx.log(level="error", message=error_msg)
-            raise Exception(error_msg) from e
+        # NOTE: GenerateInsightsFinderReport relied on BasicInsightsAudience, which was
+        # REMOVED in Google Ads API v23+. Re-enabling this tool requires reworking it to
+        # the v24 InsightsAudience model. Stubbed during the v20->v24 migration (Brain does
+        # not use audience-insights tools for PRC paid search). See generate_audience_
+        # composition_insights / generate_suggested_targeting_insights for the v24 pattern.
+        _ = (
+            baseline_audience_countries,
+            specific_audience_countries,
+            dimensions,
+            baseline_audience_ages,
+            baseline_audience_genders,
+            specific_audience_ages,
+            specific_audience_genders,
+            specific_audience_user_interests,
+        )
+        await ctx.log(
+            level="warning",
+            message="generate_insights_finder_report is disabled pending v24 rework",
+        )
+        return {
+            "status": "unavailable",
+            "note": (
+                "generate_insights_finder_report requires rework for Google Ads API "
+                "v24 (BasicInsightsAudience was removed in v23+). Not yet reimplemented."
+            ),
+        }
 
     async def generate_audience_composition_insights(
         self,

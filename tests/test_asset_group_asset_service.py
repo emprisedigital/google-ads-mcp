@@ -5,9 +5,9 @@ from typing import Any
 
 import pytest
 from google.ads.googleads.errors import GoogleAdsException
-from google.ads.googleads.v20.enums.types.asset_field_type import AssetFieldTypeEnum
-from google.ads.googleads.v20.enums.types.asset_link_status import AssetLinkStatusEnum
-from google.ads.googleads.v20.services.types.asset_group_asset_service import (
+from google.ads.googleads.v24.enums.types.asset_field_type import AssetFieldTypeEnum
+from google.ads.googleads.v24.enums.types.asset_link_status import AssetLinkStatusEnum
+from google.ads.googleads.v24.services.types.asset_group_asset_service import (
     MutateAssetGroupAssetsResponse,
     MutateAssetGroupAssetResult,
 )
@@ -218,7 +218,7 @@ class TestAssetGroupAssetService:
         asset_group_asset_service._client = mock_client
 
         # Mock API error
-        error = GoogleAdsException(None, None, None, None)
+        error = GoogleAdsException(None, None, None, None)  # type: ignore
         error.failure = Mock()  # type: ignore
         error.failure.__str__ = Mock(return_value="Asset not found")  # type: ignore
         mock_client.mutate_asset_group_assets.side_effect = error  # type: ignore

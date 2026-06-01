@@ -5,10 +5,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 from fastmcp import Context
-from google.ads.googleads.v20.services.services.geo_target_constant_service import (
+from google.ads.googleads.v24.services.services.geo_target_constant_service import (
     GeoTargetConstantServiceClient,
 )
-from google.ads.googleads.v20.services.types.geo_target_constant_service import (
+from google.ads.googleads.v24.services.types.geo_target_constant_service import (
     SuggestGeoTargetConstantsResponse,
 )
 
@@ -213,7 +213,10 @@ async def test_suggest_geo_targets_by_location_no_country_code(
     assert not hasattr(request, "country_code") or request.country_code == ""
 
 
-@pytest.mark.xfail(reason="Service uses request.GeoTargets() and address_obj.GeoTarget() as constructors but those don't exist in v20; the request shape needs to build SuggestGeoTargetConstantsRequest.GeoTargets() with geo_target_constants instead.", strict=False)
+@pytest.mark.xfail(
+    reason="Service uses request.GeoTargets() and address_obj.GeoTarget() as constructors but those don't exist in v20; the request shape needs to build SuggestGeoTargetConstantsRequest.GeoTargets() with geo_target_constants instead.",
+    strict=False,
+)
 @pytest.mark.asyncio
 async def test_suggest_geo_targets_by_address(
     geo_target_constant_service: GeoTargetConstantService,
@@ -418,7 +421,10 @@ async def test_error_handling_location(
     )
 
 
-@pytest.mark.xfail(reason="Hits the same service-code bug as test_suggest_geo_targets_by_address (request.GeoTargets()/GeoTarget() are not real v20 methods); the wrong-field exception fires before the test's expected GoogleAdsException path.", strict=False)
+@pytest.mark.xfail(
+    reason="Hits the same service-code bug as test_suggest_geo_targets_by_address (request.GeoTargets()/GeoTarget() are not real v20 methods); the wrong-field exception fires before the test's expected GoogleAdsException path.",
+    strict=False,
+)
 @pytest.mark.asyncio
 async def test_error_handling_address(
     geo_target_constant_service: GeoTargetConstantService,

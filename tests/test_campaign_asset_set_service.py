@@ -4,16 +4,16 @@ import pytest
 from typing import Any
 from unittest.mock import Mock, patch
 
-from google.ads.googleads.v20.services.services.campaign_asset_set_service import (
+from google.ads.googleads.v24.services.services.campaign_asset_set_service import (
     CampaignAssetSetServiceClient,
 )
-from google.ads.googleads.v20.services.types.campaign_asset_set_service import (
+from google.ads.googleads.v24.services.types.campaign_asset_set_service import (
     CampaignAssetSetOperation,
     MutateCampaignAssetSetsRequest,
     MutateCampaignAssetSetsResponse,
     MutateCampaignAssetSetResult,
 )
-from google.ads.googleads.v20.enums.types.response_content_type import (
+from google.ads.googleads.v24.enums.types.response_content_type import (
     ResponseContentTypeEnum,
 )
 
@@ -270,7 +270,10 @@ class TestCampaignAssetSetService:
 class TestCampaignAssetSetMCPServer:
     """Test cases for Campaign Asset Set MCP server."""
 
-    @pytest.mark.xfail(reason="MCPServer-level tests patch src.servers.X.get_client which the post-refactor server modules no longer expose; needs server-test rewrite to exercise registered tools via register_X_tools()", strict=False)
+    @pytest.mark.xfail(
+        reason="MCPServer-level tests patch src.servers.X.get_client which the post-refactor server modules no longer expose; needs server-test rewrite to exercise registered tools via register_X_tools()",
+        strict=False,
+    )
     @patch("src.servers.campaign_asset_set_server.get_client")
     async def test_link_asset_set_to_campaign_tool(self, mock_get_client: Any):
         """Test link asset set to campaign MCP tool."""
@@ -306,7 +309,10 @@ class TestCampaignAssetSetMCPServer:
         assert "customers/1234567890/campaignAssetSets/123~456" in response[0].text
         assert "link_asset_set" in response[0].text
 
-    @pytest.mark.xfail(reason="MCPServer-level tests patch src.servers.X.get_client which the post-refactor server modules no longer expose; needs server-test rewrite to exercise registered tools via register_X_tools()", strict=False)
+    @pytest.mark.xfail(
+        reason="MCPServer-level tests patch src.servers.X.get_client which the post-refactor server modules no longer expose; needs server-test rewrite to exercise registered tools via register_X_tools()",
+        strict=False,
+    )
     @patch("src.servers.campaign_asset_set_server.get_client")
     async def test_link_multiple_asset_sets_to_campaign_tool(
         self, mock_get_client: Any

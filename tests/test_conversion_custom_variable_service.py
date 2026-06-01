@@ -5,16 +5,16 @@ from typing import Any
 
 import pytest
 from google.ads.googleads.errors import GoogleAdsException
-from google.ads.googleads.v20.enums.types.conversion_custom_variable_status import (
+from google.ads.googleads.v24.enums.types.conversion_custom_variable_status import (
     ConversionCustomVariableStatusEnum,
 )
-from google.ads.googleads.v20.enums.types.response_content_type import (
+from google.ads.googleads.v24.enums.types.response_content_type import (
     ResponseContentTypeEnum,
 )
-from google.ads.googleads.v20.resources.types.conversion_custom_variable import (
+from google.ads.googleads.v24.resources.types.conversion_custom_variable import (
     ConversionCustomVariable,
 )
-from google.ads.googleads.v20.services.types.conversion_custom_variable_service import (
+from google.ads.googleads.v24.services.types.conversion_custom_variable_service import (
     MutateConversionCustomVariablesResponse,
     MutateConversionCustomVariableResult,
 )
@@ -71,7 +71,9 @@ class TestConversionCustomVariableService:
         mock_custom_var.id = 123456
         mock_custom_var.name = "Product Category"
         mock_custom_var.tag = "product_category"
-        mock_result.conversion_custom_variable = mock_custom_var  # proto-plus assigns directly
+        mock_result.conversion_custom_variable = (
+            mock_custom_var  # proto-plus assigns directly
+        )
 
         mock_response = MutateConversionCustomVariablesResponse()
         mock_response.results.append(mock_result)  # type: ignore
@@ -239,7 +241,9 @@ class TestConversionCustomVariableService:
         partial_error = status_pb2.Status()
         partial_error.code = 3  # INVALID_ARGUMENT
         partial_error.message = "Partial failure occurred"
-        mock_response.partial_failure_error = partial_error  # proto-plus assigns directly
+        mock_response.partial_failure_error = (
+            partial_error  # proto-plus assigns directly
+        )
 
         mock_client.mutate_conversion_custom_variables.return_value = mock_response  # type: ignore
 
@@ -264,7 +268,7 @@ class TestConversionCustomVariableService:
         conversion_custom_variable_service._client = mock_client
 
         # Mock API error
-        error = GoogleAdsException(None, None, None, None)
+        error = GoogleAdsException(None, None, None, None)  # type: ignore
         error.failure = Mock()  # type: ignore
         error.failure.__str__ = Mock(return_value="Tag already exists")  # type: ignore
         mock_client.mutate_conversion_custom_variables.side_effect = error  # type: ignore
