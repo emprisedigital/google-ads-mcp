@@ -183,6 +183,8 @@ class ConversionService:
         default_value: Optional[float] = None,
         always_use_default_value: Optional[bool] = None,
         counting_type: Optional[str] = None,
+        primary_for_goal: Optional[bool] = None,
+        phone_call_duration_seconds: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Update an existing conversion action.
 
@@ -228,6 +230,16 @@ class ConversionService:
                     counting_type,
                 )
                 update_mask_fields.append("counting_type")
+
+            if phone_call_duration_seconds is not None:
+                conversion_action.phone_call_duration_seconds = (
+                    phone_call_duration_seconds
+                )
+                update_mask_fields.append("phone_call_duration_seconds")
+
+            if primary_for_goal is not None:
+                conversion_action.primary_for_goal = primary_for_goal
+                update_mask_fields.append("primary_for_goal")
 
             # Update value settings if any value-related field is provided
             if default_value is not None or always_use_default_value is not None:
@@ -337,6 +349,8 @@ def create_conversion_tools(
         default_value: Optional[float] = None,
         always_use_default_value: Optional[bool] = None,
         counting_type: Optional[str] = None,
+        primary_for_goal: Optional[bool] = None,
+        phone_call_duration_seconds: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Update an existing conversion action.
 
@@ -348,6 +362,8 @@ def create_conversion_tools(
             default_value: New default value (optional)
             always_use_default_value: Whether to always use default value (optional)
             counting_type: New counting type - ONE_PER_CLICK or MANY_PER_CLICK (optional)
+            primary_for_goal: Mark conversion primary(true)/secondary(false) for its goal (optional)
+            phone_call_duration_seconds: Min call length to count (e.g. 30 for PRC calls) (optional)
 
         Returns:
             Updated conversion action details
@@ -361,6 +377,8 @@ def create_conversion_tools(
             default_value=default_value,
             always_use_default_value=always_use_default_value,
             counting_type=counting_type,
+            primary_for_goal=primary_for_goal,
+            phone_call_duration_seconds=phone_call_duration_seconds,
         )
 
     tools.extend([create_conversion_action, update_conversion_action])
