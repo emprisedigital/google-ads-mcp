@@ -451,6 +451,7 @@ async def test_add_negative_keyword_criteria(
     request = call_args[1]["request"]
     assert request.customer_id == customer_id
     assert len(request.operations) == len(keywords)
+    assert request.validate_only is False  # default = real execution
 
     # Check operations
     for i, keyword in enumerate(keywords):
@@ -467,6 +468,44 @@ async def test_add_negative_keyword_criteria(
     mock_ctx.log.assert_called_once_with(  # type: ignore
         level="info",
         message=f"Added {len(keywords)} negative keywords to campaign {campaign_id}",
+    )
+
+
+@pytest.mark.asyncio
+async def test_add_negative_keyword_criteria_validate_only(
+    campaign_criterion_service: CampaignCriterionService,
+    mock_sdk_client: Any,
+    mock_ctx: Context,
+) -> None:
+    """validate_only=True threads through to the request as a dry-run, and the
+    log notes it. This is the executor's pre-commit safety check (Opt-OS A3)."""
+    customer_id = "1234567890"
+    campaign_id = "9876543210"
+    keywords = [{"text": "free", "match_type": "BROAD"}]
+
+    mock_response = Mock(spec=MutateCampaignCriteriaResponse)
+    mock_response.results = []
+    mock_campaign_criterion_client = campaign_criterion_service.client  # type: ignore
+    mock_campaign_criterion_client.mutate_campaign_criteria.return_value = mock_response  # type: ignore
+
+    with patch(
+        "src.services.campaign.campaign_criterion_service.serialize_proto_message",
+        return_value={"results": []},
+    ):
+        await campaign_criterion_service.add_negative_keyword_criteria(
+            ctx=mock_ctx,
+            customer_id=customer_id,
+            campaign_id=campaign_id,
+            keywords=keywords,
+            validate_only=True,
+        )
+
+    call_args = mock_campaign_criterion_client.mutate_campaign_criteria.call_args  # type: ignore
+    request = call_args[1]["request"]
+    assert request.validate_only is True
+    mock_ctx.log.assert_called_once_with(  # type: ignore
+        level="info",
+        message=f"Added {len(keywords)} negative keywords to campaign {campaign_id} (validate_only dry-run)",
     )
 
 

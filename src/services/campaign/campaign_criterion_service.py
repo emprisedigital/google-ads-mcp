@@ -268,6 +268,7 @@ class CampaignCriterionService:
         customer_id: str,
         campaign_id: str,
         keywords: List[Dict[str, str]],
+        validate_only: bool = False,
     ) -> Dict[str, Any]:
         """Add negative keyword criteria to a campaign.
 
@@ -276,6 +277,7 @@ class CampaignCriterionService:
             customer_id: The customer ID
             campaign_id: The campaign ID
             keywords: List of dicts with 'text' and 'match_type' keys
+            validate_only: If true, only validates (dry-run) without executing
 
         Returns:
             List of created campaign criteria
@@ -309,6 +311,7 @@ class CampaignCriterionService:
             request = MutateCampaignCriteriaRequest()
             request.customer_id = customer_id
             request.operations = operations
+            request.validate_only = validate_only
 
             # Make the API call
             response: MutateCampaignCriteriaResponse = (
@@ -317,7 +320,8 @@ class CampaignCriterionService:
 
             await ctx.log(
                 level="info",
-                message=f"Added {len(operations)} negative keywords to campaign {campaign_id}",
+                message=f"Added {len(operations)} negative keywords to campaign {campaign_id}"
+                + (" (validate_only dry-run)" if validate_only else ""),
             )
 
             return serialize_proto_message(response)
@@ -480,6 +484,7 @@ def create_campaign_criterion_tools(
         customer_id: str,
         campaign_id: str,
         keywords: List[Dict[str, str]],
+        validate_only: bool = False,
     ) -> Dict[str, Any]:
         """Add negative keyword criteria to a campaign.
 
@@ -491,6 +496,7 @@ def create_campaign_criterion_tools(
                     {"text": "free", "match_type": "BROAD"},
                     {"text": "[cheap]", "match_type": "EXACT"}
                 ]
+            validate_only: If true, only validates (dry-run) without executing
 
         Returns:
             Mutation response with created campaign criteria
@@ -500,6 +506,7 @@ def create_campaign_criterion_tools(
             customer_id=customer_id,
             campaign_id=campaign_id,
             keywords=keywords,
+            validate_only=validate_only,
         )
 
     async def remove_campaign_criterion(
