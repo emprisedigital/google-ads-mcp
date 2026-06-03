@@ -466,6 +466,7 @@ class AdGroupCriterionService:
         customer_id: str,
         criterion_resource_name: str,
         status: str,
+        validate_only: bool = False,
     ) -> Dict[str, Any]:
         """Update the status of an ad group criterion (pause / enable / remove).
 
@@ -474,6 +475,7 @@ class AdGroupCriterionService:
             customer_id: The customer ID
             criterion_resource_name: The full resource name of the criterion
             status: New status. One of "ENABLED", "PAUSED", "REMOVED".
+            validate_only: If true, only validates (dry-run) without executing
 
         Returns:
             Updated criterion details
@@ -501,6 +503,7 @@ class AdGroupCriterionService:
             request = MutateAdGroupCriteriaRequest()
             request.customer_id = customer_id
             request.operations = [operation]
+            request.validate_only = validate_only
 
             response = self.client.mutate_ad_group_criteria(request=request)
 
@@ -509,6 +512,7 @@ class AdGroupCriterionService:
                 message=(
                     f"Updated criterion status to {status_upper}: "
                     f"{criterion_resource_name}"
+                    + (" (validate_only dry-run)" if validate_only else "")
                 ),
             )
 
@@ -671,6 +675,7 @@ def create_ad_group_criterion_tools(
         customer_id: str,
         criterion_resource_name: str,
         status: str,
+        validate_only: bool = False,
     ) -> Dict[str, Any]:
         """Update the status of an ad group criterion (pause / enable / remove).
 
@@ -683,6 +688,7 @@ def create_ad_group_criterion_tools(
             customer_id: The customer ID
             criterion_resource_name: The full resource name of the criterion
             status: New status. One of "ENABLED", "PAUSED", "REMOVED".
+            validate_only: If true, only validates (dry-run) without executing
 
         Returns:
             Updated criterion details
@@ -692,6 +698,7 @@ def create_ad_group_criterion_tools(
             customer_id=customer_id,
             criterion_resource_name=criterion_resource_name,
             status=status,
+            validate_only=validate_only,
         )
 
     tools.extend(
